@@ -115,6 +115,7 @@ import java.io.Reader;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParserFactory;
 
+import org.docx4j.XmlUtils;
 import org.xml.sax.ContentHandler;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
@@ -154,9 +155,7 @@ public final class XMLHelper {
    */
   public static XMLReader makeXMLReader(ContentHandler handler) 
       throws SAXException, ParserConfigurationException {
-    SAXParserFactory factory = SAXParserFactory.newInstance();
-    factory.setNamespaceAware(false);
-    factory.setValidating(false);
+    SAXParserFactory factory = XmlUtils.getSAXParserFactory();
     XMLReader reader = factory.newSAXParser().getXMLReader();
     if (handler != null)
       reader.setContentHandler(handler);

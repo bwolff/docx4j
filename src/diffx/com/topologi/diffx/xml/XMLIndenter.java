@@ -114,6 +114,7 @@ import java.util.Stack;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParserFactory;
 
+import org.docx4j.XmlUtils;
 import org.xml.sax.Attributes;
 import org.xml.sax.ContentHandler;
 import org.xml.sax.InputSource;
@@ -280,9 +281,7 @@ public final class XMLIndenter extends DefaultHandler implements ContentHandler 
     // create the indenter
     XMLIndenter indenter = new XMLIndenter(w);
     // initialise the SAX framework
-    SAXParserFactory factory = SAXParserFactory.newInstance();
-    factory.setNamespaceAware(false);
-    factory.setValidating(false);
+    SAXParserFactory factory = XmlUtils.getSAXParserFactory();
     InputSource source = new InputSource(r);
     // parse the XML
     XMLReader xmlreader = factory.newSAXParser().getXMLReader();

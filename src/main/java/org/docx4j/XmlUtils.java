@@ -28,7 +28,6 @@ import java.io.InputStream;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -45,8 +44,8 @@ import javax.xml.namespace.QName;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.parsers.SAXParserFactory;
 import javax.xml.transform.ErrorListener;
-import javax.xml.transform.Result;
 import javax.xml.transform.Templates;
 import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerConfigurationException;
@@ -61,9 +60,7 @@ import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 
 import org.apache.log4j.Logger;
-import org.apache.xalan.trace.PrintTraceListener;
-import org.apache.xalan.trace.TraceManager;
-import org.apache.xalan.transformer.TransformerImpl;
+import org.apache.xalan.processor.TransformerFactoryImpl;
 import org.docx4j.jaxb.Context;
 import org.docx4j.jaxb.JaxbValidationEventHandler;
 import org.docx4j.jaxb.NamespacePrefixMapperUtils;
@@ -77,6 +74,9 @@ import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
+import com.sun.org.apache.xerces.internal.jaxp.DocumentBuilderFactoryImpl;
+import com.sun.org.apache.xerces.internal.jaxp.SAXParserFactoryImpl;
+
 public class XmlUtils {
 	
 	private static Logger log = Logger.getLogger(XmlUtils.class);	
@@ -84,7 +84,7 @@ public class XmlUtils {
 	// See http://www.edankert.com/jaxpimplementations.html for
 	// a helpful list.
 		
-	public static String TRANSFORMER_FACTORY_PROCESSOR_XALAN = "org.apache.xalan.processor.TransformerFactoryImpl";
+//	public static String TRANSFORMER_FACTORY_PROCESSOR_XALAN = "org.apache.xalan.processor.TransformerFactoryImpl";
 	// TRANSFORMER_FACTORY_PROCESSOR_SUN .. JDK/JRE does not include anything like com.sun.org.apache.xalan.TransformerFactoryImpl
 	
 //	public static String TRANSFORMER_FACTORY_SAXON = "net.sf.saxon.TransformerFactoryImpl";
@@ -94,7 +94,7 @@ public class XmlUtils {
 	//public static String TRANSFORMER_FACTORY_XSLTC_XALAN = "org.apache.xalan.xsltc.trax.TransformerFactoryImpl";
 	//public static String TRANSFORMER_FACTORY_XSLTC_SUN = "com.sun.org.apache.xalan.internal.xsltc.trax.TransformerFactoryImpl";
 	
-	private static javax.xml.transform.TransformerFactory transformerFactory; 
+	private static TransformerFactory transformerFactory; 
 	/**
 	 * @since 2.8.1
 	 */
@@ -103,6 +103,7 @@ public class XmlUtils {
 	}
 
 	private static DocumentBuilderFactory documentBuilderFactory;
+	
 	/**
 	 * @since 2.8.1
 	 * 
@@ -113,21 +114,27 @@ public class XmlUtils {
 		return documentBuilderFactory;
 	}
 	
+	private static SAXParserFactory saxParserFactory;
+	
+	public static SAXParserFactory getSAXParserFactory() {
+		return saxParserFactory;
+	}
+	
 	static {
 		// JAXP factories
 		
 		// javax.xml.transform.TransformerFactory
 		instantiateTransformerFactory();
 		
-		log.debug( System.getProperty("java.vendor") );
-		log.debug( System.getProperty("java.version") );
+//		log.debug( System.getProperty("java.vendor") );
+//		log.debug( System.getProperty("java.version") );
 		
 		// javax.xml.parsers.SAXParserFactory
-		String sp = Docx4jProperties.getProperty("javax.xml.parsers.SAXParserFactory");
-		if (sp!=null) {
-			System.setProperty("javax.xml.parsers.SAXParserFactory",sp);
-			log.info("Using " + sp + " (from docx4j.properties)");
-		} 
+//		String sp = Docx4jProperties.getProperty("javax.xml.parsers.SAXParserFactory");
+//		if (sp!=null) {
+//			System.setProperty("javax.xml.parsers.SAXParserFactory",sp);
+//			log.info("Using " + sp + " (from docx4j.properties)");
+//		} 
 		
 		// CONSIDER using Xerces if present?
 		//		System.setProperty("javax.xml.parsers.SAXParserFactory",
@@ -138,22 +145,28 @@ public class XmlUtils {
 		// .. this one is available in Java 6.	
 		// System.out.println(System.getProperty("java.vendor"));
 		// System.out.println(System.getProperty("java.version"));
-		else if ((System.getProperty("java.version").startsWith("1.6")
-						&& System.getProperty("java.vendor").startsWith("Sun"))
-				|| (System.getProperty("java.version").startsWith("1.7")
-						&& System.getProperty("java.vendor").startsWith("Oracle"))) {
-		
-			System.setProperty("javax.xml.parsers.SAXParserFactory", 
-					"com.sun.org.apache.xerces.internal.jaxp.SAXParserFactoryImpl");
-
-			log.info("Using com.sun.org.apache.xerces.internal.jaxp.SAXParserFactoryImpl");
-			
-		} else {
-			log.warn("Using default SAXParserFactory: " + System.getProperty("javax.xml.parsers.SAXParserFactory" ));
-		}
+//		else if ((System.getProperty("java.version").startsWith("1.6")
+//						&& System.getProperty("java.vendor").startsWith("Sun"))
+//				|| (System.getProperty("java.version").startsWith("1.7")
+//						&& System.getProperty("java.vendor").startsWith("Oracle"))) {
+//		
+//			System.setProperty("javax.xml.parsers.SAXParserFactory", 
+//					"com.sun.org.apache.xerces.internal.jaxp.SAXParserFactoryImpl");
+//
+//			log.info("Using com.sun.org.apache.xerces.internal.jaxp.SAXParserFactoryImpl");
+//			
+//		} else {
+//			log.warn("Using default SAXParserFactory: " + System.getProperty("javax.xml.parsers.SAXParserFactory" ));
+//		}
 		// Note that we don't restore the value to its original setting (unlike TransformerFactory),
 		// since we want to avoid Crimson being used for the life of the application.
 
+//		saxParserFactory = SAXParserFactory.newInstance();
+		saxParserFactory = new SAXParserFactoryImpl();
+		saxParserFactory.setNamespaceAware(false);
+		saxParserFactory.setValidating(false);
+		log.info("Using SAXParserFactory: " + saxParserFactory.getClass().getName());
+		
 		// javax.xml.parsers.DocumentBuilderFactory
 
 		// Crimson doesn't support setTextContent; this.writeDocument also fails.
@@ -161,33 +174,35 @@ public class XmlUtils {
 		// but rather than do the same for writeDocument,
 		// let's just stop using it.
 
-		String dbf = Docx4jProperties.getProperty("javax.xml.parsers.DocumentBuilderFactory");
-		if (dbf!=null) {
-			System.setProperty("javax.xml.parsers.DocumentBuilderFactory",dbf);
-			log.info("Using " + dbf + " (from docx4j.properties)");
-		} 
+//		String dbf = Docx4jProperties.getProperty("javax.xml.parsers.DocumentBuilderFactory");
+//		if (dbf!=null) {
+//			System.setProperty("javax.xml.parsers.DocumentBuilderFactory",dbf);
+//			log.info("Using " + dbf + " (from docx4j.properties)");
+//		} 
 		
 		// Consider using Xerces if present?  Not necessary...
 		// System.setProperty("javax.xml.parsers.DocumentBuilderFactory",
 		//		"org.apache.xerces.jaxp.DocumentBuilderFactoryImpl");
 		// which is what we used to do in XmlPart.
-		else if ((System.getProperty("java.version").startsWith("1.6")
-						&& System.getProperty("java.vendor").startsWith("Sun"))
-				|| (System.getProperty("java.version").startsWith("1.7")
-						&& System.getProperty("java.vendor").startsWith("Oracle"))) {
+//		else if ((System.getProperty("java.version").startsWith("1.6")
+//						&& System.getProperty("java.vendor").startsWith("Sun"))
+//				|| (System.getProperty("java.version").startsWith("1.7")
+//						&& System.getProperty("java.vendor").startsWith("Oracle"))) {
+//		
+//			System.setProperty("javax.xml.parsers.DocumentBuilderFactory", 
+//					"com.sun.org.apache.xerces.internal.jaxp.DocumentBuilderFactoryImpl");
+//
+//			log.info("Using com.sun.org.apache.xerces.internal.jaxp.DocumentBuilderFactoryImpl");
+//			
+//		} else {
+//			log.warn("Using default DocumentBuilderFactory: " 
+//					+ System.getProperty("javax.xml.parsers.DocumentBuilderFactory" ));
+//		}
 		
-			System.setProperty("javax.xml.parsers.DocumentBuilderFactory", 
-					"com.sun.org.apache.xerces.internal.jaxp.DocumentBuilderFactoryImpl");
-
-			log.info("Using com.sun.org.apache.xerces.internal.jaxp.DocumentBuilderFactoryImpl");
-			
-		} else {
-			log.warn("Using default DocumentBuilderFactory: " 
-					+ System.getProperty("javax.xml.parsers.DocumentBuilderFactory" ));
-		}
-		
-		documentBuilderFactory = DocumentBuilderFactory.newInstance();
+//		documentBuilderFactory = DocumentBuilderFactory.newInstance();
+		documentBuilderFactory = new DocumentBuilderFactoryImpl();
 		documentBuilderFactory.setNamespaceAware(true);
+		log.info("Using DocumentBuilderFactory: " + documentBuilderFactory.getClass().getName());
 		// Note that we don't restore the value to its original setting (unlike TransformerFactory).
 		// Maybe we could, if docx4j always used this documentBuilderFactory.
 		
@@ -199,43 +214,46 @@ public class XmlUtils {
 		
 		// docx4j requires real Xalan
 		// See further docs/JAXP_TransformerFactory_XSLT_notes.txt
-		String originalSystemProperty = System.getProperty("javax.xml.transform.TransformerFactory");
-				
-		try {
-			System.setProperty("javax.xml.transform.TransformerFactory",
-					TRANSFORMER_FACTORY_PROCESSOR_XALAN);
-//					TRANSFORMER_FACTORY_SAXON);
-			
-			transformerFactory = javax.xml.transform.TransformerFactory
-					.newInstance();
-			
-			// We've got our factory now, so set it back again!
-			if (originalSystemProperty == null) {
-				System.clearProperty("javax.xml.transform.TransformerFactory");
-			} else {
-				System.setProperty("javax.xml.transform.TransformerFactory",
-						originalSystemProperty);
-			}
-		} catch (javax.xml.transform.TransformerFactoryConfigurationError e) {
-			
-			// Provider org.apache.xalan.processor.TransformerFactoryImpl not found
-			log.error("Warning: Xalan jar missing from classpath; xslt not supported",e);
-			
-			// so try using whatever TransformerFactory is available
-			if (originalSystemProperty == null) {
-				System.clearProperty("javax.xml.transform.TransformerFactory");
-			} else {
-				System.setProperty("javax.xml.transform.TransformerFactory",
-						originalSystemProperty);
-			}
-			
-			transformerFactory = javax.xml.transform.TransformerFactory
-			.newInstance();
-		}
+//		String originalSystemProperty = System.getProperty("javax.xml.transform.TransformerFactory");
+//				
+//		try {
+//			System.setProperty("javax.xml.transform.TransformerFactory",
+//					TRANSFORMER_FACTORY_PROCESSOR_XALAN);
+////					TRANSFORMER_FACTORY_SAXON);
+//			
+//			transformerFactory = javax.xml.transform.TransformerFactory
+//					.newInstance();
+//			
+//			// We've got our factory now, so set it back again!
+//			if (originalSystemProperty == null) {
+//				System.clearProperty("javax.xml.transform.TransformerFactory");
+//			} else {
+//				System.setProperty("javax.xml.transform.TransformerFactory",
+//						originalSystemProperty);
+//			}
+//		} catch (javax.xml.transform.TransformerFactoryConfigurationError e) {
+//			
+//			// Provider org.apache.xalan.processor.TransformerFactoryImpl not found
+//			log.error("Warning: Xalan jar missing from classpath; xslt not supported",e);
+//			
+//			// so try using whatever TransformerFactory is available
+//			if (originalSystemProperty == null) {
+//				System.clearProperty("javax.xml.transform.TransformerFactory");
+//			} else {
+//				System.setProperty("javax.xml.transform.TransformerFactory",
+//						originalSystemProperty);
+//			}
+//			
+//			transformerFactory = javax.xml.transform.TransformerFactory
+//			.newInstance();
+//		}
 		
+		// Docx4j always uses the Xalan transformer, so instantiate the class directly.
+		transformerFactory = new TransformerFactoryImpl();
+		log.info("Using TransformerFactory: " + transformerFactory.getClass().getName());
+				
 		LoggingErrorListener errorListener = new LoggingErrorListener(false);
 		transformerFactory.setErrorListener(errorListener);
-		
 	}
 	
 
